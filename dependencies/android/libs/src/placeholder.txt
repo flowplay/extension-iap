@@ -1,0 +1,3 @@
+I haven't figured out why we need this directory, but the build fails without it. This file is here so the directory
+structure is preserved in git.
+
