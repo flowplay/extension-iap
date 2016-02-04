@@ -18,6 +18,10 @@ class Purchase
 	public var originalJson(default, null):String;
 	public var json(default, null):String;
 
+    // Amazon App Store Properties
+    public var userId(default, null):String;
+    public var receiptId(default, null):String;
+
 	// iOS Properties
 	public var transactionID(default, null):String;
 	public var transactionDate(default, null):Int;
@@ -59,7 +63,9 @@ class Purchase
 		purchaseState = Reflect.field(dynObj, "purchaseState");
 		developerPayload = Reflect.field(dynObj, "developerPayload");
 		purchaseToken = Reflect.field(dynObj, "purchaseToken");
-		
+        receiptId = Reflect.field(dynObj, "receiptId");
+        userId = Reflect.field(dynObj, "userId");
+
 		this.signature = signature;
 		this.itemType = itemType;
 		

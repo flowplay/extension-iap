@@ -75,7 +75,11 @@ import openfl.utils.JNI;
 	public static function initialize (publicKey:String = ""):Void {
 
 		if (funcInit == null) {
-			funcInit = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "initialize", "(Ljava/lang/String;Lorg/haxe/lime/HaxeObject;)V");
+            #if kindle
+            funcInit = JNI.createStaticMethod ("org/haxe/extension/iap/amazon/InAppPurchase", "initialize", "(Ljava/lang/String;Lorg/haxe/lime/HaxeObject;)V");
+            #else
+            funcInit = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "initialize", "(Ljava/lang/String;Lorg/haxe/lime/HaxeObject;)V");
+            #end
 		}
 
 		if (inventory == null) inventory = new Inventory(null);
@@ -99,7 +103,11 @@ import openfl.utils.JNI;
 	public static function purchase (productID:String, devPayload:String = ""):Void {
 
 		if (funcBuy == null) {
-			funcBuy = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "buy", "(Ljava/lang/String;Ljava/lang/String;)V");
+            #if kindle
+            funcBuy = JNI.createStaticMethod ("org/haxe/extension/iap/amazon/InAppPurchase", "buy", "(Ljava/lang/String;Ljava/lang/String;)V");
+            #else
+            funcBuy = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "buy", "(Ljava/lang/String;Ljava/lang/String;)V");
+            #end
 		}
 
 		IAPHandler.lastPurchaseRequest = productID;
@@ -133,10 +141,15 @@ import openfl.utils.JNI;
 	public static function consume (purchase:Purchase):Void {
 
 		if (funcConsume == null) {
-			funcConsume = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "consume", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            #if kindle
+            funcConsume = JNI.createStaticMethod ("org/haxe/extension/iap/amazon/InAppPurchase", "consume", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            #else
+            funcConsume = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "consume", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            #end
+
 		}
 		IAPHandler.lastPurchaseRequest = purchase.productID;
-		funcConsume (purchase.originalJson, purchase.itemType, purchase.signature);
+		//funcConsume (purchase.originalJson, purchase.itemType, purchase.signature);
 
 	}
 
@@ -156,9 +169,13 @@ import openfl.utils.JNI;
 	 */
 
 	public static function queryInventory (queryItemDetails:Bool = false, moreItems:Array<String> = null):Void {
-
+        trace("IAP:queryInventory");
 		if (funcQueryInventory == null) {
-			funcQueryInventory = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "queryInventory", "(Z[Ljava/lang/String;)V");
+            #if kindle
+            funcQueryInventory = JNI.createStaticMethod ("org/haxe/extension/iap/amazon/InAppPurchase", "queryInventory", "(Z[Ljava/lang/String;)V");
+            #else
+            funcQueryInventory = JNI.createStaticMethod ("org/haxe/extension/iap/InAppPurchase", "queryInventory", "(Z[Ljava/lang/String;)V");
+            #end
 		}
 		funcQueryInventory (queryItemDetails, moreItems);
 
@@ -224,6 +241,162 @@ import openfl.utils.JNI;
 
 #if (android && !display)
 
+#if kindle
+
+private class IAPHandler {
+
+    public static var lastPurchaseRequest:String = "";
+    public static var androidAvailable:Bool = true;
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function new () { }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onCanceledPurchase (productID:String):Void {
+        trace("IAP:onCanceledPurchase - productID = " + productID);
+        IAP.dispatcher.dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_CANCEL, productID));
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onFailedConsume (response:String):Void {
+        trace("IAP:onFailedConsume - response = " + response);
+        var productID:String = "";
+
+        productID = lastPurchaseRequest; //temporal fix
+
+        var dynResp:Dynamic = Json.parse(response);
+        var evt:IAPEvent = new IAPEvent (IAPEvent.PURCHASE_CONSUME_FAILURE, productID);
+        evt.productID = Reflect.field(Reflect.field(dynResp, "product"), "productId");
+        evt.message = Reflect.field(Reflect.field(dynResp, "result"), "message");
+        IAP.dispatcher.dispatchEvent (evt);
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onConsume (response:String):Void {
+        trace("IAP:onConsume - response = " + response);
+        var productID:String = "";
+
+        productID = lastPurchaseRequest; //temporal fix
+
+        var dynResp:Dynamic = Json.parse(response);
+        var evt:IAPEvent = new IAPEvent (IAPEvent.PURCHASE_CONSUME_SUCCESS);
+        evt.productID = Reflect.field(dynResp, "productId");
+        IAP.dispatcher.dispatchEvent (evt);
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onFailedPurchase (response:String):Void {
+        trace("IAP:onFailedPurchase - response = " + response);
+        var productID:String = "";
+
+        productID = lastPurchaseRequest; //temporal fix
+
+        var dynResp:Dynamic = Json.parse(response);
+        var evt:IAPEvent = new IAPEvent (IAPEvent.PURCHASE_FAILURE);
+        if (Reflect.field(dynResp, "product") != null) evt.productID = Reflect.field(Reflect.field(dynResp, "product"), "productId");
+        evt.message = Reflect.field(Reflect.field(dynResp, "result"), "message");
+        IAP.dispatcher.dispatchEvent (evt);
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onPurchase (response:String):Void {
+        trace("IAP:onPurchase - response = " + response);
+        var evt:IAPEvent = new IAPEvent (IAPEvent.PURCHASE_SUCCESS);
+
+        evt.purchase = new Purchase(response, "", "");
+        evt.productID = evt.purchase.productID;
+        IAP.inventory.purchaseMap.set(evt.purchase.productID, evt.purchase);
+
+        IAP.dispatcher.dispatchEvent (evt);
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onQueryInventoryComplete (response:String):Void {
+        trace("IAP:onQueryInventoryComplete - response = " + response);
+
+        /*
+        {
+              "UNAVAILABLE_SKUS": "[product.vg_slots_21, product.vg_slots_4, product.vg_slots_6]",
+              "requestStatus": "SUCCESSFUL",
+              "requestId": "de04692d-7773-45e8-b68a-e6331631f98d",
+              "productData": {
+                "product.vg_slots_26": {
+                  "title": "40 Gems",
+                  "price": "$3",
+                  "sku": "product.vg_slots_26",
+                  "description": "40 Gems for use in Vegas World Slots",
+                  "smallIconUrl": "https:\/\/s3-external-1.amazonaws.com\/com-amazon-mas-catalog\/M110Y1WIYDQV1V%2FM2JG7OU39NRGWW%2Fimages%2F_d2459a2f-6447-4e40-b126-4b7922235a8e_104bf7221b2ef67307968ae71a7b44aa",
+                  "productType": "CONSUMABLE"
+                }
+              }
+        }
+         */
+
+        if (response == "Failure") {
+            androidAvailable = false;
+            IAP.dispatcher.dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_QUERY_INVENTORY_FAILED));
+
+        } else {
+            trace("IAP:onQueryInventoryComplete: " + response);
+            var dynResp:Dynamic = Json.parse(response);
+            IAP.inventory = new Inventory(dynResp);
+
+            var evt:IAPEvent = new IAPEvent (IAPEvent.PURCHASE_QUERY_INVENTORY_COMPLETE);
+            evt.productsData = new Array<IAProduct>();
+
+            var dynProductData:Dynamic = Reflect.field(dynResp, "productData");
+
+            var prod:IAProduct;
+            for (productName in Reflect.fields(dynProductData)) {
+                var product = Reflect.field(dynProductData, productName);
+                trace("product");
+                trace(product);
+                prod = { productID: Reflect.field(product, "sku") };
+                prod.type = Reflect.field(product, "type");
+                prod.localizedPrice = Reflect.field(product, "price");
+                prod.localizedTitle = Reflect.field(product, "title");
+                prod.localizedDescription = Reflect.field(product, "description");
+                evt.productsData.push(prod);
+            }
+
+            IAP.dispatcher.dispatchEvent (evt);
+            androidAvailable = true;
+        }
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+    public function onStarted (response:String):Void {
+        trace("IAP:onStarted - response " + response);
+        if (response == "Success") {
+            androidAvailable = true;
+            IAP.dispatcher.dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_INIT));
+        } else {
+            androidAvailable = false;
+            IAP.dispatcher.dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_INIT_FAILED));
+        }
+    }
+
+///////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+}
+#else
 
 private class IAPHandler {
 
@@ -310,7 +483,7 @@ private class IAPHandler {
 			IAP.dispatcher.dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_QUERY_INVENTORY_FAILED));
 
 		} else {
-
+            trace("IAP:onQueryInventoryComplete: " + response);
 			var dynResp:Dynamic = Json.parse(response);
 			IAP.inventory = new Inventory(dynResp);
 
@@ -360,4 +533,5 @@ private class IAPHandler {
 
 }
 
+#end
 #end
