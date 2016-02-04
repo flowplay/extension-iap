@@ -1,7 +1,4 @@
 .DS_Store
-ndll/*/*.a
-ndll/*/*.so
-ndll/*/*.ndll
 project/obj/*
 
 *.hxproj
