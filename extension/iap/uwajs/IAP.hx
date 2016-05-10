@@ -76,7 +76,11 @@ import haxe.Json;
 
     public static function initialize (publicKey:String = ""):Void {
 
-        dispatchEvent (new IAPEvent (IAPEvent.PURCHASE_INIT_FAILED, null));
+        if (!initialized) {
+            initialized = true;
+
+            dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_INIT));
+        }
 
     }
 
