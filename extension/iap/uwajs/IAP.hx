@@ -119,10 +119,18 @@ import haxe.Json;
         untyped Windows.ApplicationModel.Store.CurrentAppSimulator.loadListingInformationAsync().then(function (listing) {
             console.log(listing);
 
-            var listings:Array<Dynamic> = listing.productListings;
+            var productIds:Array<String> = inArg;
 
-            for (pl in listings) {
-                tempProductDetails.push({productID: pl.productId, localizedPrice: pl.formattedPrice});
+            for (i in 0...productIds.length) {
+                var productId = productIds[i];
+
+                if (listing.productListings.hasKey(productId)) {
+                    var pl = listing.productListings.lookup(productId);
+
+                    if (pl != null) {
+                        tempProductDetails.push({productID: pl.productId, localizedPrice: pl.formattedPrice});
+                    }
+                }
             }
 
             dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_PRODUCT_DATA_COMPLETE, null, tempProductDetails));
