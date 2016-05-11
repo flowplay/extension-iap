@@ -51,7 +51,7 @@ import haxe.Json;
     public static var available (get, null):Bool;
     public static var manualTransactionMode (get, set):Bool;
 
-    public static var inventory(default, null):Inventory = null;
+    public static var inventory(default, null):Inventory = new Inventory();
 
     private static var initialized = false;
 
@@ -99,7 +99,26 @@ import haxe.Json;
      */
 
     public static function purchase (productID:String, devPayload:String = ""):Void {
+        untyped Windows.ApplicationModel.Store.CurrentAppSimulator.requestProductPurchaseAsync(productID).done(function (purchaseResults) {
+            if (purchaseResults.status ==  Windows.ApplicationModel.Store.ProductPurchaseStatus.succeeded) {
+                var evt = new IAPEvent (IAPEvent.PURCHASE_SUCCESS);
+                evt.productID = productID;
+                evt.purchase = new Purchase({
+                    productID: productID,
+                    transactionID: purchaseResults.transactionId,
+                    developerPayload: purchaseResults.receiptXml
+                });
 
+                dispatchEvent(evt);
+            } else if (purchaseResults.status ==  Windows.ApplicationModel.Store.ProductPurchaseStatus.notFulfilled) {
+
+            } else if (purchaseResults.status ==  Windows.ApplicationModel.Store.ProductPurchaseStatus.notPurchased) {
+                dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_CANCEL));
+            }
+        },
+        function () {
+            dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_FAILURE));
+        });
     }
 
     /**
@@ -114,27 +133,30 @@ import haxe.Json;
 	 */
     public static function requestProductData (inArg:Dynamic):Void {
 
-        var tempProductDetails = new Array<IAProduct>();
+        if (tempProductsData.length == 0) {
+            untyped Windows.ApplicationModel.Store.CurrentAppSimulator.loadListingInformationAsync().then(function (listing) {
+                console.log(listing);
 
-        untyped Windows.ApplicationModel.Store.CurrentAppSimulator.loadListingInformationAsync().then(function (listing) {
-            console.log(listing);
+                var productIds:Array<String> = inArg;
 
-            var productIds:Array<String> = inArg;
+                for (i in 0...productIds.length) {
+                    var productId = productIds[i];
 
-            for (i in 0...productIds.length) {
-                var productId = productIds[i];
+                    if (listing.productListings.hasKey(productId)) {
+                        var pl = listing.productListings.lookup(productId);
 
-                if (listing.productListings.hasKey(productId)) {
-                    var pl = listing.productListings.lookup(productId);
-
-                    if (pl != null) {
-                        tempProductDetails.push({productID: pl.productId, localizedPrice: pl.formattedPrice});
+                        if (pl != null) {
+                            tempProductsData.push({productID: pl.productId, localizedPrice: pl.formattedPrice});
+                        }
                     }
                 }
-            }
 
-            dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_PRODUCT_DATA_COMPLETE, null, tempProductDetails));
-        });
+                dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_PRODUCT_DATA_COMPLETE, null, tempProductsData));
+            });
+        }
+        else {
+            dispatchEvent(new IAPEvent (IAPEvent.PURCHASE_PRODUCT_DATA_COMPLETE, null, tempProductsData));
+        }
     }
 
     /**
@@ -148,7 +170,24 @@ import haxe.Json;
      */
 
     public static function consume (purchase:Purchase):Void {
-
+        untyped Windows.ApplicationModel.Store.CurrentAppSimulator.reportConsumableFulfillmentAsync(purchase.productID, purchase.transactionID).then(function(result) {
+            if (result == Windows.ApplicationModel.Store.FulfillmentResult.succeeded ||
+            result == Windows.ApplicationModel.Store.FulfillmentResult.nothingToFulfill ||
+            result == Windows.ApplicationModel.Store.FulfillmentResult.purchasePending) {
+                var evt = new IAPEvent (IAPEvent.PURCHASE_CONSUME_SUCCESS);
+                evt.productID = purchase.productID;
+                dispatchEvent(evt);
+            }
+            else {
+                var evt = new IAPEvent (IAPEvent.PURCHASE_CONSUME_FAILURE);
+                evt.productID = purchase.productID;
+                dispatchEvent(evt);
+            }
+        }, function () {
+            var evt = new IAPEvent (IAPEvent.PURCHASE_CONSUME_FAILURE);
+            evt.productID = purchase.productID;
+            dispatchEvent(evt);
+        });
     }
 
 
