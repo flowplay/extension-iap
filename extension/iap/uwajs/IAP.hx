@@ -60,7 +60,8 @@ import haxe.Json;
     // Event dispatcher composition
     private static var dispatcher = new EventDispatcher ();
 
-    private static var currentApp = function () {
+    private static var currentApp(get, null):Dynamic;
+    private static function get_currentApp():Dynamic {
         untyped return Windows.ApplicationModel.Store.CurrentAppSimulator;
     }
 
