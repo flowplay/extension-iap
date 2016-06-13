@@ -60,6 +60,11 @@ import haxe.Json;
     // Event dispatcher composition
     private static var dispatcher = new EventDispatcher ();
 
+    private static var currentApp(get, null):Dynamic;
+    private static function get_currentApp():Dynamic {
+        return Windows.ApplicationModel.Store.CurrentApp;
+    }
+
 
     /**
      * Initializes the extension.
@@ -99,7 +104,7 @@ import haxe.Json;
      */
 
     public static function purchase (productID:String, devPayload:String = ""):Void {
-        untyped Windows.ApplicationModel.Store.CurrentAppSimulator.requestProductPurchaseAsync(productID).done(function (purchaseResults) {
+        untyped currentApp.requestProductPurchaseAsync(productID).done(function (purchaseResults) {
             if (purchaseResults.status ==  Windows.ApplicationModel.Store.ProductPurchaseStatus.succeeded) {
                 var evt = new IAPEvent (IAPEvent.PURCHASE_SUCCESS);
                 evt.productID = productID;
@@ -134,7 +139,7 @@ import haxe.Json;
     public static function requestProductData (inArg:Dynamic):Void {
 
         if (tempProductsData.length == 0) {
-            untyped Windows.ApplicationModel.Store.CurrentAppSimulator.loadListingInformationAsync().then(function (listing) {
+            untyped currentApp.loadListingInformationAsync().then(function (listing) {
                 console.log(listing);
 
                 var productIds:Array<String> = inArg;
@@ -170,7 +175,7 @@ import haxe.Json;
      */
 
     public static function consume (purchase:Purchase):Void {
-        untyped Windows.ApplicationModel.Store.CurrentAppSimulator.reportConsumableFulfillmentAsync(purchase.productID, purchase.transactionID).then(function(result) {
+        untyped currentApp.reportConsumableFulfillmentAsync(purchase.productID, purchase.transactionID).then(function(result) {
             if (result == Windows.ApplicationModel.Store.FulfillmentResult.succeeded ||
             result == Windows.ApplicationModel.Store.FulfillmentResult.nothingToFulfill ||
             result == Windows.ApplicationModel.Store.FulfillmentResult.purchasePending) {
