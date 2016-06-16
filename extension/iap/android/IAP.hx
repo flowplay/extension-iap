@@ -149,7 +149,7 @@ import openfl.utils.JNI;
 
 		}
 		IAPHandler.lastPurchaseRequest = purchase.productID;
-		//funcConsume (purchase.originalJson, purchase.itemType, purchase.signature);
+		funcConsume (purchase.originalJson, purchase.itemType, purchase.signature);
 
 	}
 
