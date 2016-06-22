@@ -62,7 +62,7 @@ import haxe.Json;
 
     private static var currentApp(get, null):Dynamic;
     private static function get_currentApp():Dynamic {
-        return Windows.ApplicationModel.Store.CurrentApp;
+        return untyped Windows.ApplicationModel.Store.CurrentApp;
     }
 
 
