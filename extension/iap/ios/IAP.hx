@@ -1,10 +1,11 @@
 package extension.iap.ios;
 
+import lime.system.CFFI;
 import extension.iap.IAP;
 import flash.errors.Error;
 import flash.events.Event;
 import flash.events.EventDispatcher;
-import flash.Lib;
+import openfl.Lib;
 import haxe.Json;
 
 /**
@@ -352,15 +353,15 @@ import haxe.Json;
 
 	// Native Methods
 
-	private static var purchases_initialize = Lib.load ("iap", "iap_initialize", 0);
-	private static var purchases_restore = Lib.load ("iap", "iap_restore", 0);
-	private static var purchases_buy = Lib.load ("iap", "iap_buy", 1);
-	private static var purchases_get_data = Lib.load ("iap", "iap_get_data", 1);
-	private static var purchases_finish_transaction = Lib.load ("iap", "iap_finish_transaction", 1);
-	private static var purchases_canbuy = Lib.load ("iap", "iap_canbuy", 0);
-	private static var purchases_get_manualtransactionmode = Lib.load ("iap", "iap_get_manualtransactionmode", 0);
-	private static var purchases_set_manualtransactionmode = Lib.load ("iap", "iap_set_manualtransactionmode", 1);
-	private static var purchases_release = Lib.load ("iap", "iap_release", 0);
-	private static var set_event_handle = Lib.load ("iap", "iap_set_event_handle", 1);
+	private static var purchases_initialize = CFFI.load ("iap", "iap_initialize", 0);
+	private static var purchases_restore = CFFI.load ("iap", "iap_restore", 0);
+	private static var purchases_buy = CFFI.load ("iap", "iap_buy", 1);
+	private static var purchases_get_data = CFFI.load ("iap", "iap_get_data", 1);
+	private static var purchases_finish_transaction = CFFI.load ("iap", "iap_finish_transaction", 1);
+	private static var purchases_canbuy = CFFI.load ("iap", "iap_canbuy", 0);
+	private static var purchases_get_manualtransactionmode = CFFI.load ("iap", "iap_get_manualtransactionmode", 0);
+	private static var purchases_set_manualtransactionmode = CFFI.load ("iap", "iap_set_manualtransactionmode", 1);
+	private static var purchases_release = CFFI.load ("iap", "iap_release", 0);
+	private static var set_event_handle = CFFI.load ("iap", "iap_set_event_handle", 1);
 
 }

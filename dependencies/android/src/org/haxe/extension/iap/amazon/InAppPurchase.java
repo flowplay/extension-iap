@@ -49,7 +49,7 @@ public class InAppPurchase extends Extension {
 	private static HaxeObject callback = null;
     private static String publicKey = "";
 
-	public static void buy (final String productID, final String devPayload) {
+    public static void buy (final String productID, final String devPayload) {
 		Extension.mainActivity.runOnUiThread(new Runnable() {
 				public void run() {
 					try {
@@ -64,6 +64,8 @@ public class InAppPurchase extends Extension {
 	
 	public static void consume (final String purchaseJson, final String itemType, final String signature) 
 	{
+        PurchasingService.getPurchaseUpdates(false);
+
         Extension.callbackHandler.post (new Runnable ()
         {
             @Override public void run ()
@@ -111,6 +113,12 @@ public class InAppPurchase extends Extension {
         Log.d(TAG, "initialize: registering PurchasingListener");
         PurchasingService.registerListener(Extension.mainContext, mPurchasingListener);
         Log.d(TAG, "IS_SANDBOX_MODE:" + PurchasingService.IS_SANDBOX_MODE);
+
+        Log.d(TAG, "onResume: call getUserData");
+        PurchasingService.getUserData();
+        Log.d(TAG, "onResume: getPurchaseUpdates");
+        PurchasingService.getPurchaseUpdates(false);
+
 
         Extension.callbackHandler.post (new Runnable () {
 
@@ -233,6 +241,8 @@ public class InAppPurchase extends Extension {
 
                     for (final Receipt receipt : response.getReceipts()) {
                         Log.d(TAG, "onPurchaseUpdatesResponse: need to handle receipt" + receipt.toString());
+
+                        PurchasingService.notifyFulfillment(receipt.getReceiptId(), FulfillmentResult.FULFILLED);
                     }
                     if (response.hasMore()) {
                         PurchasingService.getPurchaseUpdates(false);
