@@ -1,11 +1,14 @@
 package extension.iap.ios;
 
+#if openfl_legacy
+import openfl.Lib in CFFI;
+#else
 import lime.system.CFFI;
+#end
 import extension.iap.IAP;
 import flash.errors.Error;
 import flash.events.Event;
 import flash.events.EventDispatcher;
-import openfl.Lib;
 import haxe.Json;
 
 /**

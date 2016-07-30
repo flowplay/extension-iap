@@ -5,3 +5,4 @@ project/obj/*
 
 sample/_material/*
 sample/bin
+.idea/
